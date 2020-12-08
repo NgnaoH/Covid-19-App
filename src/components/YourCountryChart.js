@@ -8,6 +8,8 @@ import { TouchableWithoutFeedback } from "react-native-gesture-handler"
 import AppIcon from "./AppIcon"
 import { connect } from "react-redux"
 
+import * as Location from "expo-location"
+
 const theme = useTheme()
 
 import moment from "moment"
@@ -21,6 +23,7 @@ import Animated, {
 import { fetchCountryData } from "../actions/countriesData"
 
 import Icon from "react-native-vector-icons/Feather"
+import { setCurrentCountry } from "../actions/countries"
 
 const AnimatedAppIcon = Animated.createAnimatedComponent(Icon)
 
@@ -33,7 +36,9 @@ const YourCountryChart = (props) => {
     date: [""],
   })
 
-  const [status, setStatus] = useState("Please select a country.")
+  const [countryCodeByLocation, setCountryCodeByLocation] = useState(null)
+
+  const [status, setStatus] = useState("We are detecting by your location...")
   const [isLoadingHidden, setIsLoadingHidden] = useState(false)
 
   const animatedRefreshIconSharedValue = useSharedValue(0)
@@ -53,67 +58,133 @@ const YourCountryChart = (props) => {
   }))
 
   useEffect(() => {
-    if (!props.currentCountry.slug) {
-      setStatus("Please select a country.")
-      setIsLoadingHidden(false)
-      animatedLoadingSharedValue.value = 1
-      return
-    }
+    ;(async () => {
+      if (!props.currentCountry.slug) {
+        setStatus("Please select a country.")
+        setIsLoadingHidden(false)
+        animatedLoadingSharedValue.value = 1
+        return
+      }
 
-    const data = props.countriesData[props.currentCountry.slug]
-    animatedLoadingSharedValue.value = withTiming(1, {
-      duration: 500,
-      easing: Easing.linear,
-    })
-
-    setStatus("Loading...")
-    setIsLoadingHidden(false)
-
-    if (!data) {
-      setData({
-        confirmed: [0],
-        active: [0],
-        recovered: [0],
-        deaths: [0],
-        date: [""],
-      })
-      return
-    }
-
-    if (!data.length) {
-      setStatus("No data.")
-      setData({
-        confirmed: [0],
-        active: [0],
-        recovered: [0],
-        deaths: [0],
-        date: [""],
-      })
-      return
-    }
-
-    const mappedData = {
-      confirmed: data.map((day) => day.confirmed),
-      active: data.map((day) => day.active),
-      recovered: data.map((day) => day.recovered),
-      deaths: data.map((day) => day.deaths),
-      date: data.map((day) => moment(day.date).format("DD/MM")),
-    }
-
-    setData(mappedData)
-    animatedLoadingSharedValue.value = withTiming(
-      0,
-      {
+      const data = props.countriesData[props.currentCountry.slug]
+      animatedLoadingSharedValue.value = withTiming(1, {
         duration: 500,
         easing: Easing.linear,
-      },
-      (finished) => {
-        if (finished) setIsLoadingHidden(true)
+      })
+
+      setStatus("Loading...")
+      setIsLoadingHidden(false)
+
+      if (!data) {
+        setData({
+          confirmed: [0],
+          active: [0],
+          recovered: [0],
+          deaths: [0],
+          date: [""],
+        })
+        return
       }
-    )
-    animatedRefreshIconSharedValue.value = 0
+
+      if (!data.length) {
+        setStatus("This country data is not available.")
+        setData({
+          confirmed: [0],
+          active: [0],
+          recovered: [0],
+          deaths: [0],
+          date: [""],
+        })
+        return
+      }
+
+      const mappedData = {
+        confirmed: data.map((day) => day.confirmed),
+        active: data.map((day) => day.active),
+        recovered: data.map((day) => day.recovered),
+        deaths: data.map((day) => day.deaths),
+        date: data.map((day) => moment(day.date).format("DD/MM")),
+      }
+
+      setData(mappedData)
+      animatedLoadingSharedValue.value = withTiming(
+        0,
+        {
+          duration: 500,
+          easing: Easing.linear,
+        },
+        (finished) => {
+          if (finished) setIsLoadingHidden(true)
+        }
+      )
+      animatedRefreshIconSharedValue.value = 0
+      return
+    })()
     return
   }, [props.countriesData, props.currentCountry])
+
+  useEffect(() => {
+    ;(async () => {
+      let { status } = await Location.requestPermissionsAsync()
+
+      if (status !== "granted") {
+        return setStatus(
+          "Location is currently disabled. Please select a country."
+        )
+      }
+
+      let location
+
+      try {
+        location = await Location.getCurrentPositionAsync({})
+      } catch (err) {
+        return setStatus(
+          "Can not get your device current location. Please select a country."
+        )
+      }
+
+      const { latitude, longitude } = location.coords
+
+      const reverse = await Location.reverseGeocodeAsync({
+        latitude,
+        longitude,
+      })
+
+      const { isoCountryCode } = Array.isArray(reverse) ? reverse[0] : reverse
+
+      setCountryCodeByLocation(isoCountryCode)
+    })()
+    return
+  }, [])
+
+  useEffect(() => {
+    if (props.currentCountry.slug) return
+
+    if (!props.countries.length) return
+
+    if (!countryCodeByLocation) return
+
+    setStatus(
+      "Detected country code by your location: " + countryCodeByLocation
+    )
+
+    const country = props.countries.find(
+      (o) => o.iso2 === countryCodeByLocation
+    )
+
+    const slug = country.slug
+
+    props.setCurrentCountry({
+      name: country.name,
+      slug,
+    })
+
+    const data = props.countriesData[slug]
+
+    if (data) return
+
+    props.fetchCountryData(slug)
+  }, [props.countries, countryCodeByLocation])
 
   return (
     <View style={styles.body}>
@@ -145,7 +216,15 @@ const YourCountryChart = (props) => {
               alignItems: "center",
             }}
           >
-            <Text style={{ color: theme.background }}>{status}</Text>
+            <Text
+              style={{
+                color: theme.background,
+                width: (Dimensions.get("window").width * 2) / 3,
+                textAlign: "center",
+              }}
+            >
+              {status}
+            </Text>
           </View>
           <LinearGradient
             style={{
@@ -162,16 +241,20 @@ const YourCountryChart = (props) => {
         <View style={styles.refreshButton}>
           <TouchableWithoutFeedback
             onPress={() => {
-              animatedRefreshIconSharedValue.value = withTiming(720, {
-                duration: 1500,
-                easing: Easing.linear,
-              }, (finished) => {
-                if(finished) animatedRefreshIconSharedValue.value = 0
-              })
+              animatedRefreshIconSharedValue.value = withTiming(
+                720,
+                {
+                  duration: 1500,
+                  easing: Easing.linear,
+                },
+                (finished) => {
+                  if (finished) animatedRefreshIconSharedValue.value = 0
+                }
+              )
               props.fetchCountryData(props.currentCountry.slug)
             }}
             style={{
-              padding: 6
+              padding: 6,
             }}
           >
             <AnimatedAppIcon
@@ -191,7 +274,7 @@ const YourCountryChart = (props) => {
               },
             ],
           }}
-          width={Dimensions.get("window").width + 10} // from react-native
+          width={Dimensions.get("window").width + 5} // from react-native
           height={220}
           yAxisInterval={1} // optional, defaults to 1
           withHorizontalLines={false}
@@ -247,12 +330,15 @@ const mapStateToProps = (state) => {
   return {
     countriesData: state.countriesData.countriesData,
     currentCountry: state.countries.currentCountry,
+    countries: state.countries.countries,
   }
 }
 
 const mapDispatchToProps = (dispatch) => {
   return {
     fetchCountryData: (countrySlug) => dispatch(fetchCountryData(countrySlug)),
+    setCurrentCountry: (currentCountry) =>
+      dispatch(setCurrentCountry(currentCountry)),
   }
 }
 

@@ -19,7 +19,8 @@ const AppNavigator = () => {
     >
       <Stack.Screen name="GetStarted" component={GetStartedScreen} />
       <Stack.Screen name="YourCountry" component={YourCountryScreen} />
-      <Stack.Screen name="WorldMap" component={WorldMapScreen} />
+      <Stack.Screen name="WorldMap" component={WorldMapScreen} options={{
+      }}/>
     </Stack.Navigator>
   )
 }

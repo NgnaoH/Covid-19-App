@@ -36,14 +36,12 @@ const Header = (props) => {
         style={styles.wave1}
       />
       <View style={styles.headerContent}>
-        <Text style={styles.title}>Your Country</Text>
+        <Text style={styles.title}>{props.title}</Text>
         <Text style={styles.subtitle}>{props.subtitle}</Text>
       </View>
     </View>
   )
 }
-
-console.warn(Dimensions.get("window").width)
 
 const styles = StyleSheet.create({
   header: {

@@ -6,7 +6,6 @@ import Svg, { G, Path, Defs } from "react-native-svg"
   return (
     <Svg
       fill="none"
-      xmlns="http://www.w3.org/2000/svg"
       {...props}
     >
       <G filter="url(#prefix__filter0_d)" clipRule="evenodd">

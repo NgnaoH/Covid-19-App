@@ -18,6 +18,9 @@ const ApiService = {
       },
     })
   },
+  getSummary: () => {
+    return axios.get(`${baseURL}/summary`)
+  },
 }
 
 export default ApiService

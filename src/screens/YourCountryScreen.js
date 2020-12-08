@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from "react"
 
-import {
-  ScrollView,
-  View,
-  StyleSheet,
-  Dimensions,
-  Image,
-} from "react-native"
+import { ScrollView, View, StyleSheet, Dimensions, Image } from "react-native"
 
 import { useTheme } from "../themes"
 
@@ -17,10 +11,15 @@ import YourCountryCallToAction from "../components/YourCountryCallToAction"
 import YourCountryChart from "../components/YourCountryChart"
 import YourCountryCard from "../components/YourCountryCard"
 
+import { setCountriesData } from "../actions/countriesData"
+
 import ViewWorldImage from "../assets/view_world.png"
 
 import Blob from "../components/Blob"
 import { connect } from "react-redux"
+
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import { setCountries } from "../actions/countries"
 
 const theme = useTheme()
 
@@ -49,6 +48,24 @@ const YourCountryScreen = (props) => {
       quantity: "--",
     },
   ])
+
+  useEffect(() => {
+    ;(async () => {
+      const json = await AsyncStorage.getItem("countriesData")
+      if (!json) return
+      const data = JSON.parse(json)
+      props.setCountriesData(data)
+    })()
+  }, [])
+
+  useEffect(() => {
+    ;(async () => {
+      const json = await AsyncStorage.getItem("countries")
+      if (!json) return
+      const data = JSON.parse(json)
+      props.setCountries(data)
+    })()
+  }, [])
 
   useEffect(() => {
     const data = props.countriesData[props.currentCountry.slug]
@@ -108,7 +125,7 @@ const YourCountryScreen = (props) => {
   return (
     <View style={styles.container}>
       <ScrollView style={styles.body} nestedScrollEnabled>
-        <Header subtitle={props.currentCountry.name} />
+        <Header title="Your Country" subtitle={props.currentCountry.name} />
         <YourCountrySearch />
         <YourCountryChart field={currentField} />
         <View style={styles.info}>
@@ -127,6 +144,9 @@ const YourCountryScreen = (props) => {
             ))}
           </View>
         </View>
+        <View style={styles.worldButton}>
+          <YourCountryCallToAction />
+        </View>
         <View
           style={{
             flex: 1,
@@ -144,10 +164,6 @@ const YourCountryScreen = (props) => {
           />
           <Blob style={styles.blob} />
         </View>
-        <View style={styles.worldButton}>
-          <YourCountryCallToAction
-          />
-        </View>
       </ScrollView>
     </View>
   )
@@ -158,9 +174,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.background,
     height: Dimensions.get("window").height,
   },
-  worldButton: {
-    paddingBottom: 20,
-  },
+  worldButton: {},
   image: {
     width: Dimensions.get("window").width - 60,
     height: 240,
@@ -193,4 +207,11 @@ const mapStateToProps = (state) => {
   }
 }
 
-export default connect(mapStateToProps)(YourCountryScreen)
+const mapDispatchToProps = (dispatch) => {
+  return {
+    setCountriesData: (data) => dispatch(setCountriesData(data)),
+    setCountries: (data) => dispatch(setCountries(data)),
+  }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(YourCountryScreen)

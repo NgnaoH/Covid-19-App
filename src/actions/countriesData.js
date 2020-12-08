@@ -1,4 +1,4 @@
-import { ADD_COUNTRY_DATA } from "./types"
+import { ADD_COUNTRY_DATA, SET_COUNTRIES_DATA, SET_SUMMARY } from "./types"
 
 import ApiService from "../services/api.service"
 
@@ -11,8 +11,6 @@ export const addCountryData = (countrySlug, data) => {
 }
 
 import { takeRight, sum, forIn, map, groupBy } from "lodash"
-
-import { Alert } from "react-native"
 
 export const fetchCountryData = (countrySlug) => {
   return function (dispatch) {
@@ -42,5 +40,41 @@ export const fetchCountryData = (countrySlug) => {
         dispatch(addCountryData(countrySlug, takenRightData))
       })
       .catch((err) => {})
+  }
+}
+
+export const setCountriesData = (data) => {
+  return {
+    type: SET_COUNTRIES_DATA,
+    data: data,
+  }
+}
+
+export const setSummary = (data) => {
+  return {
+    type: SET_SUMMARY,
+    data: data,
+  }
+}
+
+export const fetchSummary = () => {
+  return function (dispatch) {
+    return ApiService.getSummary()
+      .then((response) => {
+        const data = response.data
+        const mappedCountries = data.Countries.map((country) => ({
+          name: country.Country,
+          totalConfirmed: country.TotalConfirmed,
+          totalDeaths: country.TotalDeaths,
+          totalRecovered: country.TotalRecovered,
+        }))
+        dispatch(
+          setSummary({
+            global: data.Global,
+            countries: mappedCountries,
+          })
+        )
+      })
+      .catch((err) => ({}))
   }
 }

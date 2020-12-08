@@ -72,14 +72,14 @@ const YourCountrySearch = (props) => {
               {
                 duration: 300,
                 easing: Easing.linear,
-                useNativeDriver: true
+                useNativeDriver: true,
               }
             )
           } else {
             animatedResultSharedProp.value = withTiming(0, {
               duration: 300,
               easing: Easing.linear,
-              useNativeDriver: true
+              useNativeDriver: true,
             })
           }
           setSearchText(text)
@@ -89,7 +89,7 @@ const YourCountrySearch = (props) => {
           animatedResultSharedProp.value = withTiming(0, {
             duration: 300,
             easing: Easing.linear,
-            useNativeDriver: true
+            useNativeDriver: true,
           })
         }}
         value={searchText}
@@ -105,7 +105,8 @@ const YourCountrySearch = (props) => {
                     slug: country.slug,
                   })
                   setSearchText(country.name)
-                  if(props.countriesData[country.slug]) return
+                  if (props.countriesData[country.slug]) return
+
                   props.fetchCountryData(country.slug)
                 }}
               >
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
 const mapStateToProps = (state) => {
   return {
     countries: state.countries.countries,
-    countriesData: state.countriesData.countriesData
+    countriesData: state.countriesData.countriesData,
   }
 }
 
