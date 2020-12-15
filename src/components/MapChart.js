@@ -10,10 +10,7 @@ import {
 
 import { useTheme } from "../themes"
 
-import Svg, {
-  G,
-  Path,
-} from "react-native-svg"
+import Svg, { G, Path } from "react-native-svg"
 
 import * as d3 from "d3"
 
@@ -24,7 +21,6 @@ const theme = useTheme()
 
 const MapChart = (props) => {
   const [countryList, setCountryList] = useState([])
-  const [dataByCountry, setDataByCountry] = useState({})
 
   const [translateX, setTranslateX] = useState(0)
   const [translateY, setTranslateY] = useState(0)
@@ -123,7 +119,9 @@ const MapChart = (props) => {
             stroke={theme.text_primary}
             strokeWidth={0.25}
             fill={
-              data ? props.colorize(data[props.field]) : theme.text_secondary
+              data
+                ? props.colorize[props.field](data[props.field])
+                : theme.text_secondary
             }
             style={{
               zIndex: 100,

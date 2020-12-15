@@ -53,7 +53,7 @@ const WorldMapCard = (props) => {
             },
           ]}
         >
-          {props.field.quantity}
+          {props.field.quantity || '--'}
         </Text>
       </View>
     </TouchableWithoutFeedback>
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 10,
     overflow: "hidden",
-    height: 60,
+    height: 50,
     backgroundColor: theme.secondary,
   },
   title: {
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: theme.background,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
     position: "absolute",
     top: 26,

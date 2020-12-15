@@ -21,6 +21,8 @@ import * as d3 from "d3"
 
 import WorldMapCard from "../components/WorldMapCard"
 
+import WorldTop from "../components/WorldTop"
+
 import { navigate } from "../RootNavigation"
 
 import MapChart from "../components/MapChart"
@@ -29,24 +31,23 @@ import Header from "../components/Header"
 import { fetchSummary, setSummary } from "../actions/countriesData"
 import CallToActionButton from "../components/CallToActionButton"
 
-const fields = [
-  {
-    field: "totalConfirmed",
-    name: "Confirmed",
-  },
-  {
-    field: "totalDeaths",
-    name: "Deaths",
-  },
-  {
-    field: "totalRecovered",
-    name: "Recovered",
-  },
-]
-
 const WorldMapScreen = (props) => {
   const [COUNTRIES, setCOUNTRIES] = useState(null)
   const [field, setField] = useState("totalConfirmed")
+  const [fields, setFields] = useState([
+    {
+      field: "totalConfirmed",
+      name: "Confirmed",
+    },
+    {
+      field: "totalDeaths",
+      name: "Deaths",
+    },
+    {
+      field: "totalRecovered",
+      name: "Recovered",
+    },
+  ])
 
   useEffect(() => {
     ;(async () => {
@@ -74,17 +75,34 @@ const WorldMapScreen = (props) => {
     return d3.max(props.summary.countries.map((country) => country[field]))
   }, [field, props.summary])
 
-  const colorize = useMemo(() => {
-    const color = d3
-      .scaleSequentialSymlog(d3.interpolateReds)
-      .domain([0, maxCases])
+  useEffect(() => {
+    setFields(
+      fields.map((field) => ({
+        ...field,
+        quantity: props.summary.global[field.field],
+      }))
+    )
+  }, [props.summary])
 
-    return color
-  })
+  const colorizeFunctions = useMemo(() => {
+    const colors = {
+      totalConfirmed: d3
+        .scaleSequentialSymlog(d3.interpolateOranges)
+        .domain([0, maxCases]),
+      totalDeaths: d3
+        .scaleSequentialSymlog(d3.interpolateReds)
+        .domain([0, maxCases]),
+      totalRecovered: d3
+        .scaleSequentialSymlog(d3.interpolateGreens)
+        .domain([0, maxCases]),
+    }
+
+    return colors
+  }, [maxCases])
 
   return (
     <View style={styles.container}>
-      <ScrollView>
+      <ScrollView nestedScrollEnabled>
         <Header
           title="World Map"
           subtitle="Monitoring cases all over the world"
@@ -92,7 +110,7 @@ const WorldMapScreen = (props) => {
         <MapChart
           COUNTRIES={COUNTRIES}
           summary={props.summary}
-          colorize={colorize}
+          colorize={colorizeFunctions}
           maxCases={maxCases}
           field={field}
           dimensions={{
@@ -116,6 +134,7 @@ const WorldMapScreen = (props) => {
             ))}
           </View>
         </View>
+        <WorldTop currentField={field} summary={props.summary} />
         <View
           style={{
             display: "flex",
@@ -125,6 +144,9 @@ const WorldMapScreen = (props) => {
           }}
         >
           <CallToActionButton
+            style={{
+            marginBottom: 20
+            }}
             onPress={() => navigate("YourCountry")}
             content={() => <Text>Back</Text>}
           />
@@ -139,7 +161,7 @@ const theme = useTheme()
 const styles = StyleSheet.create({
   container: {
     backgroundColor: theme.background,
-    minHeight: Dimensions.get("window").height
+    minHeight: Dimensions.get("window").height,
   },
   map: {
     width: Dimensions.get("window").width,

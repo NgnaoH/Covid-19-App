@@ -70,7 +70,11 @@ export const fetchSummary = () => {
         }))
         dispatch(
           setSummary({
-            global: data.Global,
+            global: {
+              totalConfirmed: data.Global.TotalConfirmed,
+              totalDeaths: data.Global.TotalDeaths,
+              totalRecovered: data.Global.TotalRecovered,
+            },
             countries: mappedCountries,
           })
         )
